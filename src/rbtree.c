@@ -26,17 +26,45 @@ struct rb_node* get_node() {
         assert(node);
         node->rb_parent = node->rb_left = node->rb_right = NIL;
         node->rb_color = RB_BLACK;
+        node->key = -1;
+        node->s = NULL;
+        return node;
+}
+
+// check [here](http://www.cse.yorku.ca/~oz/hash.html)
+static unsigned long hash(unsigned char* str, int *len) {
+        unsigned long hash = 5381;
+        int c;
+        *len = 0;
+        while ((c = *str++)) {
+                hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
+                (*len)++;
+        }
+        return hash;
+}
+
+struct rb_node* get_node_str(unsigned char* ps) {
+        struct rb_node *node = get_node();
+        if (ps) {
+                int len = 0;
+                unsigned long k = hash(ps, &len);
+                node->key = k;
+                node->s = malloc((len + 1) * sizeof(unsigned char));
+                node->s[len] = '\0';
+                while (len--) node->s[len] = ps[len];  // copy the string
+                //printf("node_str: %s\n", node->s);
+        }
         return node;
 }
 
 /*
-         |                                          |
-         y        <-----left_rotate(T, x)----       x
-        / \                                        / \
-       x   c      ------right_rotate(T, y)--->    a   y
-      / \                                            / \
-     a   b                                          b   c
- */
+   |                                          |
+   y        <-----left_rotate(T, x)----       x
+   / \                                        / \
+   x   c      ------right_rotate(T, y)--->    a   y
+   / \                                            / \
+   a   b                                          b   c
+   */
 
 // root and x both are not NULL
 static rb_node* left_rotate(rb_node* root, rb_node* x) {
@@ -260,7 +288,7 @@ inline void free_node(rb_node* p) {
         if (p && p != NIL) free(p);
 }
 
-struct rb_node* rb_search(rb_node* root, int key) {
+struct rb_node* rb_search(rb_node* root, long long key) {
         while (root != NIL) {
                 if (root->key == key) break;
                 if (root->key > key) root = root->rb_left;
@@ -272,6 +300,10 @@ struct rb_node* rb_search(rb_node* root, int key) {
 void tranversal_inorder(struct rb_node *root) {
         if (root == NIL) return;
         tranversal_inorder(root->rb_left);
-        printf("%s%d ", root->rb_color == RB_RED ? RED : RESET, root->key);
+        int flag = root->s ? 1 : 0;
+        printf("%s%lld %s%s", root->rb_color == RB_RED ? RED : RESET, root->key,
+                        flag ? root->s : " ",
+                        flag ? "\n" : " ");
         tranversal_inorder(root->rb_right);
 }
+
